@@ -1,0 +1,5 @@
+# Copy to .envrc and customize
+export DATABASE_URL="sqlite:///./herd_inbox.db"
+export SECRET_KEY="change-this-in-production"
+export ADMIN_USERNAME="admin"
+export ADMIN_PASSWORD="change-this-in-production"
