@@ -10,28 +10,28 @@ Email-centric platform for herd communication. Core principle: **Email is the da
 
 ### Issue Tracking
 
-We use **beads** for issue tracking:
+We use **GitHub Issues** for issue tracking: [github.com/mostlycopypaste/herd-inbox/issues](https://github.com/mostlycopypaste/herd-inbox/issues)
 
 ```bash
-# List ready issues (no blockers)
-beads:ready
+# List open issues
+gh issue list
 
-# Show issue details
-beads:show herd-inbox-NNN
+# View issue details
+gh issue view <number>
 
-# Update status
-beads:update herd-inbox-NNN --status in_progress
+# Comment on an issue
+gh issue comment <number> --body "Starting work on this"
 
-# Mark completed
-beads:update herd-inbox-NNN --status completed
+# Claim an issue
+gh issue edit <number> --add-assignee @me
 ```
 
 ### TDD Workflow
 
 **Always follow Test-Driven Development:**
 
-1. Pick issue from `beads:ready`
-2. Create feature branch: `feature/herd-inbox-NNN-description`
+1. Pick issue from `gh issue list`
+2. Create feature branch: `feat/<short-description>`
 3. **Write tests first** (this is mandatory)
 4. Implement feature to make tests pass
 5. Run tests: `pytest tests/ -v --cov`
@@ -42,8 +42,9 @@ beads:update herd-inbox-NNN --status completed
 ### Branch Strategy
 
 ```
-feature/herd-inbox-NNN-short-description
-bugfix/herd-inbox-NNN-bug-name
+feat/<short-description>
+fix/<short-description>
+chore/<short-description>
 ```
 
 Squash merge to main. Delete branch after merge.
@@ -56,12 +57,12 @@ Squash merge to main. Delete branch after merge.
 
 Run coverage report:
 ```bash
-pytest tests/ --cov=src/herd_inbox --cov-report=term-missing
+pytest tests/ --cov=herd_inbox --cov-report=term-missing
 ```
 
 ## Security-First Development
 
-**Issue herd-inbox-003 is BLOCKING** - no routes can be implemented before security sanitization is complete.
+**Issue #2 (Security Sanitization) is BLOCKING** - no routes can be implemented before security sanitization is complete.
 
 ### Security Checklist
 
@@ -120,22 +121,16 @@ Only add comments when:
 
 ```python
 import pytest
-from src.herd_inbox.db import create_tables
+from herd_inbox.db import init_db, get_connection, drop_tables
 
 @pytest.fixture
-def db():
-    """Empty test database"""
-    conn = create_tables(":memory:")
+def db_conn(tmp_path):
+    """Empty test database, cleaned up after test."""
+    db_path = tmp_path / "test.db"
+    conn = init_db(db_path)
     yield conn
     conn.close()
-
-@pytest.fixture
-def seeded_db():
-    """Database with test data"""
-    conn = create_tables(":memory:")
-    # Insert test data
-    yield conn
-    conn.close()
+    drop_tables(db_path)
 ```
 
 ### Test Organization
@@ -168,35 +163,25 @@ def test_sanitize_removes_script_tags():
 
 ### Communication
 
-Post progress to herd-inbox-standup space:
-```
-✅ herd-inbox-003 complete | 🚧 herd-inbox-004 50% | ⚠️ Blocked on security review
-```
-
-Use issue comments for design decisions:
+Use GitHub issue comments for design decisions and progress updates:
 ```bash
-beads:comments add herd-inbox-003 "Used bleach instead of html5lib - better XSS protection"
+gh issue comment <number> --body "Used bleach instead of html5lib - better XSS protection"
 ```
 
 ## Critical Dependencies
 
 **Phase 1 Critical Path:**
 ```
-001 (scaffolding) → 002 (database) → 003 (security-BLOCKING) → {004, 005, 006, 007}
+#1 (Scaffolding ✅) → #1 (Database) → #2 (Security-BLOCKING) → {#4, #5, #6}
 ```
 
-**Issue 003 blocks everything** - prioritize security implementation.
+**Issue #2 blocks everything** - prioritize security implementation.
 
 ## Local Development
 
 ### Database
 
-SQLite with WAL mode:
-```python
-conn.execute("PRAGMA journal_mode=WAL")
-```
-
-Database file: `herd_inbox.db` (gitignored)
+SQLite with WAL mode. Database file: `herd_inbox.db` (gitignored)
 
 ### Environment Variables
 
@@ -209,14 +194,14 @@ export SECRET_KEY="dev-secret-key"
 ### Dev Server
 
 ```bash
-uvicorn src.herd_inbox.main:app --reload --port 8000
+uvicorn herd_inbox.main:app --reload --port 8000
 ```
 
 ## PR Template
 
 ```markdown
 ## Issue
-Closes #herd-inbox-NNN
+Closes #<number>
 
 ## Description
 [Brief description of changes]
@@ -256,5 +241,4 @@ Closes #herd-inbox-NNN
 
 - [PRD.md](PRD.md) - Full requirements
 - [PROPOSAL.md](PROPOSAL.md) - Original proposal
-- [Plan](/Users/kduane/.claude/plans/delightful-finding-wand.md) - Implementation plan
-- [API Docs](docs/API.md) - API reference (Phase 2+)
+- [GitHub Issues](https://github.com/mostlycopypaste/herd-inbox/issues) - Issue tracking

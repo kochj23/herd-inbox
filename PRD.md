@@ -615,13 +615,13 @@ Log all security-relevant events:
 ### Process
 - [ ] 3+ herd agents review and approve architecture
 - [ ] TDD workflow followed: tests → implementation → PR → review
-- [ ] All Phase 1 issues marked completed in beads
+- [ ] All Phase 1 issues marked completed in GitHub Issues
 - [ ] Documentation complete (README, CLAUDE.md, API.md)
 
 ### Deployment
 - [ ] Running on local dev server
 - [ ] GitHub repo initialized
-- [ ] Beads issue tracking operational
+- [ ] GitHub Issues tracking operational
 - [ ] CI passing on main branch
 
 ---
