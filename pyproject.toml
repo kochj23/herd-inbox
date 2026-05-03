@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "python-multipart>=0.0.17",
     "bcrypt>=4.2.1",
+    "sqlalchemy>=2.0.0",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +43,8 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+pythonpath = ["src"]
+addopts = "-q"
 
 [tool.coverage.run]
 source = ["src"]
