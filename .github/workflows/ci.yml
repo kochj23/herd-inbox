@@ -45,10 +45,12 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           python-version: "3.11"
-          enable-cache: true
+          # Cache disabled on lint job — minimal install, low value. Removes a
+          # cross-PR cache-poisoning surface (Silas MED finding).
+          enable-cache: false
 
-      - name: Install ruff
-        run: uv pip install --system "ruff>=0.8.0"
+      - name: Install ruff (pinned exact version, not a range — supply-chain hardening)
+        run: uv pip install --system "ruff==0.8.6"
 
       - name: ruff check
         run: ruff check src/ tests/
@@ -70,7 +72,8 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           python-version: "3.11"
-          enable-cache: true
+          # Cache only on push-to-main; on fork PRs, no cache to avoid poisoning.
+          enable-cache: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - name: Install project + type stubs
         run: |
@@ -95,7 +98,8 @@ jobs:
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
           python-version: "3.11"
-          enable-cache: true
+          # Cache only on push-to-main; on fork PRs, no cache to avoid poisoning.
+          enable-cache: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
       - name: Install project
         run: uv pip install --system -e ".[dev]"
@@ -112,17 +116,23 @@ jobs:
       - name: Enforce 100% coverage on security module (per CLAUDE.md)
         run: |
           set -euo pipefail
-          # Re-run with the security module in isolation + fail-under=100. This is the
-          # mandatory gate. Other modules use the project >80% gate via --cov-fail-under
-          # in the next step.
-          if [ -f src/herd_inbox/security.py ]; then
-            pytest tests/test_security.py \
-              --cov=herd_inbox.security \
-              --cov-fail-under=100 \
-              -q
-          else
-            echo "::notice::security.py not present yet — skipping security coverage gate"
-          fi
+          # Mandatory: 100% coverage on the security module. After PR #10 lands,
+          # security.py is permanent — there is no scenario where it should be
+          # absent on main. A PR that deletes it MUST fail CI here, not silently
+          # pass. (Pre-#10 fallback removed per Silas finding "coverage gate
+          # bypassable from a fork PR".)
+          test -f src/herd_inbox/security.py || {
+            echo "::error::src/herd_inbox/security.py is missing — security gate cannot run"
+            exit 1
+          }
+          test -f tests/test_security.py || {
+            echo "::error::tests/test_security.py is missing — security gate cannot run"
+            exit 1
+          }
+          pytest tests/test_security.py \
+            --cov=herd_inbox.security \
+            --cov-fail-under=100 \
+            -q
 
       - name: Enforce >80% overall coverage (per CLAUDE.md)
         run: |
