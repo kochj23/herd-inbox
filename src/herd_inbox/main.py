@@ -2,11 +2,16 @@
 
 from fastapi import FastAPI
 
+from herd_inbox.security import csp_middleware
+
 app = FastAPI(
     title="Herd-Inbox",
     description="Email-centric platform for herd communication",
     version="0.1.0",
 )
+
+# Wire CSP + security headers on every response (issue #2 acceptance criterion).
+app.middleware("http")(csp_middleware)
 
 
 @app.get("/health")
