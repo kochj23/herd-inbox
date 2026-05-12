@@ -3,3 +3,7 @@ export DATABASE_URL="sqlite:///./herd_inbox.db"
 export SECRET_KEY="change-this-in-production"
 export ADMIN_USERNAME="admin"
 export ADMIN_PASSWORD="change-this-in-production"
+
+# Token estimation backend: "chars" (default, no deps), "cl100k" (tiktoken/GPT-4),
+# or "qwen" (tiktoken o200k_base — more accurate for Qwen3-based agents)
+export HERD_TOKENIZER="chars"

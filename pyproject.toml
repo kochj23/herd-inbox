@@ -25,6 +25,8 @@ dev = [
     "ruff>=0.8.0",
     "mypy>=1.13.0",
 ]
+# tiktoken is already a core dependency. Set HERD_TOKENIZER=qwen (o200k_base) for
+# Qwen3-based agents, or HERD_TOKENIZER=chars to skip tiktoken entirely.
 
 [build-system]
 requires = ["hatchling"]
