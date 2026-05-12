@@ -3,3 +3,17 @@ export DATABASE_URL="sqlite:///./herd_inbox.db"
 export SECRET_KEY="change-this-in-production"
 export ADMIN_USERNAME="admin"
 export ADMIN_PASSWORD="change-this-in-production"
+
+# IMAP ingestion (optional — alternative to Resend webhook for self-hosted deployments)
+# Set HERD_INBOX_DB to override the SQLite database path used by the ingestor.
+export IMAP_HOST="imap.example.com"
+export IMAP_PORT="993"
+export IMAP_USER="herd@example.com"
+export IMAP_PASSWORD="change-this-in-production"
+export IMAP_MAILBOX="INBOX"
+export IMAP_POLL_INTERVAL="300"   # seconds between polls in daemon mode
+export IMAP_USE_SSL="true"
+
+# Token estimation backend: "chars" (default, no deps), "cl100k" (tiktoken/GPT-4),
+# or "qwen" (tiktoken o200k_base — more accurate for Qwen3-based agents)
+export HERD_TOKENIZER="chars"
