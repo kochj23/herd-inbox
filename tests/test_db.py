@@ -10,6 +10,7 @@ from herd_inbox.db import (
     init_db,
     run_migrations,
     drop_tables,
+    _applied_versions,
 )
 
 
@@ -280,4 +281,59 @@ class TestDropTables:
         )
         tables = cursor.fetchall()
         assert len(tables) == 0
+        conn.close()
+
+
+class TestMigrationVersioning:
+    """Test that run_migrations tracks applied versions."""
+
+    def test_schema_versions_table_created(self, tmp_db: Path):
+        """schema_versions table must exist after first run."""
+        run_migrations(tmp_db)
+        conn = get_connection(tmp_db)
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_versions'"
+        )
+        assert cursor.fetchone() is not None
+        conn.close()
+
+    def test_migration_001_recorded(self, tmp_db: Path):
+        """Migration 001 should appear in schema_versions."""
+        run_migrations(tmp_db)
+        conn = get_connection(tmp_db)
+        applied = _applied_versions(conn)
+        assert 1 in applied
+        conn.close()
+
+    def test_second_run_does_not_duplicate(self, tmp_db: Path):
+        """Running migrations twice must not insert duplicate version rows."""
+        run_migrations(tmp_db)
+        run_migrations(tmp_db)
+        conn = get_connection(tmp_db)
+        count = conn.execute(
+            "SELECT COUNT(*) FROM schema_versions WHERE version = 1"
+        ).fetchone()[0]
+        assert count == 1
+        conn.close()
+
+    def test_filename_recorded(self, tmp_db: Path):
+        """The filename column should hold the migration file name."""
+        run_migrations(tmp_db)
+        conn = get_connection(tmp_db)
+        row = conn.execute(
+            "SELECT filename FROM schema_versions WHERE version = 1"
+        ).fetchone()
+        assert row is not None
+        assert row[0] == "001_initial_schema.sql"
+        conn.close()
+
+    def test_drop_tables_clears_versions(self, tmp_db: Path):
+        """drop_tables should also remove schema_versions so tests start clean."""
+        run_migrations(tmp_db)
+        drop_tables(tmp_db)
+        conn = get_connection(tmp_db)
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_versions'"
+        )
+        assert cursor.fetchone() is None
         conn.close()

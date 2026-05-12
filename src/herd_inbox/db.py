@@ -32,8 +32,39 @@ def get_connection(db_path: Path | None = None) -> sqlite3.Connection:
     return conn
 
 
+def _ensure_schema_version_table(conn: sqlite3.Connection) -> None:
+    """Create the schema_versions table if it does not exist."""
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS schema_versions (
+            version     INTEGER PRIMARY KEY,
+            filename    TEXT    NOT NULL,
+            applied_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+        """
+    )
+    conn.commit()
+
+
+def _applied_versions(conn: sqlite3.Connection) -> set[int]:
+    """Return the set of already-applied migration version numbers."""
+    _ensure_schema_version_table(conn)
+    rows = conn.execute("SELECT version FROM schema_versions").fetchall()
+    return {row[0] for row in rows}
+
+
+def _migration_version(path: Path) -> int:
+    """Parse the leading integer from a migration filename like '001_initial_schema.sql'."""
+    stem = path.stem  # e.g. "001_initial_schema"
+    prefix = stem.split("_")[0]
+    return int(prefix)
+
+
 def run_migrations(db_path: Path | None = None) -> None:
-    """Run all pending migrations in order.
+    """Run pending migrations in order, skipping already-applied ones.
+
+    Each migration is recorded in `schema_versions` after a successful run,
+    so this function is safe to call on every startup.
 
     Args:
         db_path: Path to the database file. Uses default if not provided.
@@ -41,19 +72,30 @@ def run_migrations(db_path: Path | None = None) -> None:
     conn = get_connection(db_path)
     try:
         migration_files = sorted(MIGRATIONS_DIR.glob("[0-9]*_*.sql"))
-        # Filter out rollback files
         migration_files = [f for f in migration_files if "rollback" not in f.stem]
 
+        applied = _applied_versions(conn)
+
         for migration_file in migration_files:
+            version = _migration_version(migration_file)
+            if version in applied:
+                continue
             sql = migration_file.read_text()
-            # Use executescript to handle PRAGMAs + DDL correctly
+            # executescript commits any open transaction first, then runs DDL.
             conn.executescript(sql)
+            # Record the version (executescript closes implicit transactions,
+            # so we need a fresh execute+commit here).
+            conn.execute(
+                "INSERT INTO schema_versions (version, filename) VALUES (?, ?)",
+                (version, migration_file.name),
+            )
+            conn.commit()
     finally:
         conn.close()
 
 
 def init_db(db_path: Path | None = None) -> sqlite3.Connection:
-    """Initialize the database: run migrations and return a connection.
+    """Initialize the database: run pending migrations and return a connection.
 
     Args:
         db_path: Path to the database file. Uses default if not provided.
@@ -77,5 +119,7 @@ def drop_tables(db_path: Path | None = None) -> None:
         rollback_file = MIGRATIONS_DIR / "001_rollback.sql"
         if rollback_file.exists():
             conn.executescript(rollback_file.read_text())
+        # Also drop the version tracking table so tests start clean.
+        conn.executescript("DROP TABLE IF EXISTS schema_versions;")
     finally:
         conn.close()
