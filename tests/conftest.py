@@ -62,7 +62,9 @@ def db_session(pg_engine) -> Session:
     """
     connection = pg_engine.connect()
     transaction = connection.begin()
-    session = Session(bind=connection)
+    # join_transaction_mode="create_savepoint" is the SQLAlchemy 2.0 replacement
+    # for the legacy Session(bind=connection) pattern.
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
 
     nested = connection.begin_nested()
 
