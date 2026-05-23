@@ -81,9 +81,16 @@ class TestMakeTldr:
     def test_truncates_at_word_boundary(self):
         long_text = "word " * 100  # 500 chars
         result = _make_tldr(long_text)
-        assert len(result) <= 281  # 280 + ellipsis char
+        assert len(result) <= 280
         assert result.endswith("…")
         assert not result.endswith(" …")  # no trailing space before ellipsis
+
+    def test_no_word_boundary_stays_within_limit(self):
+        # Single unbroken string — no space to split on; must still be <= 280
+        text = "x" * 400
+        result = _make_tldr(text)
+        assert len(result) <= 280
+        assert result.endswith("…")
 
     def test_exact_280_chars(self):
         text = "x" * 280
@@ -141,6 +148,13 @@ class TestStripQuotedReply:
         result = _strip_quoted_reply(body)
         assert "My reply." in result
         assert "> Old message" not in result
+
+    def test_strips_gt_quoted_lines_no_space(self):
+        # RFC 2822 allows ">" without trailing space — must also be stripped
+        body = "My reply.\n\n>Old message line\n>Another old line"
+        result = _strip_quoted_reply(body)
+        assert "My reply." in result
+        assert ">Old message" not in result
 
 
 # ---------------------------------------------------------------------------

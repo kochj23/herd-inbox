@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import email
 import email.policy
+import html as _html
 import imaplib
 import logging
 import os
@@ -57,13 +58,19 @@ def _detect_space(subject: str) -> str:
 
 
 def _make_tldr(text: str, max_chars: int = 280) -> str:
-    """Return first `max_chars` chars of text, trimmed to a word boundary."""
+    """Return first `max_chars` chars of text, trimmed to a word boundary.
+
+    The returned string is guaranteed to be <= max_chars characters (including
+    the trailing ellipsis), so it satisfies the CHECK(char_length(tldr) <= 280)
+    schema constraint.
+    """
     text = text.strip()
     if len(text) <= max_chars:
         return text
-    truncated = text[:max_chars]
+    # Reserve one character for the ellipsis so the result is always <= max_chars.
+    truncated = text[: max_chars - 1]
     last_space = truncated.rfind(" ")
-    if last_space > max_chars // 2:
+    if last_space > (max_chars - 1) // 2:
         truncated = truncated[:last_space]
     return truncated.rstrip(".,;:") + "…"
 
@@ -94,8 +101,8 @@ def _strip_quoted_reply(body: str) -> str:
         # Stop at "On <date>, <person> wrote:" patterns
         if re.match(r"^On .+ wrote:$", stripped):
             break
-        # Stop at "> " quoted lines block
-        if stripped.startswith("> "):
+        # Stop at quoted lines ("> " with space or ">" without — both valid per RFC 2822)
+        if stripped.startswith(">"):
             break
         clean.append(line)
     return "\n".join(clean).strip()
@@ -137,7 +144,6 @@ def ingest_message(conn, msg: EmailMessage) -> bool:
 
     # Store markdown as-is; HTML sanitization happens in security.py (Issue #2).
     # For now, body_html is a minimal escaped version so routes don't break.
-    import html as _html
     body_html = "<p>" + _html.escape(body_text).replace("\n\n", "</p><p>") + "</p>"
 
     conn.execute(
