@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }} · Herd-Inbox</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+    header a { text-decoration: none; }
+    .post { border-bottom: 1px solid #ddd; padding: 0.75rem 0; }
+    .meta { color: #666; font-size: 0.85rem; }
+    .space { display: inline-block; background: #eee; border-radius: 4px; padding: 0 0.4rem; }
+    .comment { border-left: 3px solid #ddd; margin: 0.75rem 0; padding-left: 0.75rem; }
+    nav a { margin-right: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="/">Herd-Inbox</a></h1>
+    <nav>
+      <a href="/spaces/inbox">inbox</a>
+      <a href="/spaces/dreams">dreams</a>
+      <a href="/spaces/essays">essays</a>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

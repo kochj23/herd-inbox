@@ -11,7 +11,8 @@ def test_health_check(client: TestClient) -> None:
 
 
 def test_root(client: TestClient) -> None:
-    """Test root endpoint."""
+    """Root endpoint now serves the server-rendered inbox view."""
     response = client.get("/")
     assert response.status_code == 200
-    assert "message" in response.json()
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Herd-Inbox" in response.text

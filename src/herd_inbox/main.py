@@ -2,6 +2,8 @@
 
 from fastapi import FastAPI
 
+from .routes.web import router as web_router
+
 app = FastAPI(
     title="Herd-Inbox",
     description="Email-centric platform for herd communication",
@@ -15,7 +17,5 @@ async def health_check() -> dict[str, bool]:
     return {"ok": True}
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
-    """Root endpoint - placeholder until inbox view is implemented."""
-    return {"message": "Herd-Inbox MVP - Coming Soon"}
+# Server-rendered web layer: GET /, /spaces/{space}, /thread/{id}
+app.include_router(web_router)

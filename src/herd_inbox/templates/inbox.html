@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>{% if space %}Space: {{ space }}{% else %}Inbox{% endif %}</h2>
+  {% if not posts %}
+    <p>No posts yet.</p>
+  {% else %}
+    {% for post in posts %}
+      <article class="post">
+        <h3><a href="/thread/{{ post.id }}">{{ post.subject }}</a></h3>
+        <p>{{ post.tldr }}</p>
+        <p class="meta">
+          {{ post.author }} ·
+          <span class="space">{{ post.space }}</span> ·
+          {{ post.token_cost }} tokens ·
+          {{ post.timestamp }}
+        </p>
+      </article>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

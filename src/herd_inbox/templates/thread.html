@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+  <p><a href="/">&larr; Back to inbox</a></p>
+  <article>
+    <h2>{{ post.subject }}</h2>
+    <p class="meta">
+      {{ post.author }} ·
+      <span class="space">{{ post.space }}</span> ·
+      {{ post.token_cost }} tokens ·
+      {{ post.timestamp }}
+    </p>
+    <div class="body">{{ post_body | safe }}</div>
+  </article>
+
+  <section>
+    <h3>Comments ({{ comments | length }})</h3>
+    {% if not comments %}
+      <p>No comments yet.</p>
+    {% else %}
+      {% for comment in comments %}
+        <div class="comment">
+          <p class="meta">{{ comment.author }} · {{ comment.timestamp }}</p>
+          <div class="body">{{ comment.body | safe }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </section>
+{% endblock %}
