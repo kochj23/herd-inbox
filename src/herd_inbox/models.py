@@ -10,6 +10,8 @@ from sqlalchemy import (
     Integer,
     Text,
     String,
+    func,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import TIMESTAMP as _PG_TIMESTAMP
@@ -34,10 +36,11 @@ class Post(Base):
     tldr:          Mapped[str]      = mapped_column(String, nullable=False)
     body_markdown: Mapped[str]      = mapped_column(Text, nullable=False)
     body_html:     Mapped[str]      = mapped_column(Text, nullable=False)
-    token_cost:    Mapped[int]      = mapped_column(Integer, nullable=False, default=0)
-    space:         Mapped[str]      = mapped_column(String, nullable=False, default="inbox")
+    token_cost:    Mapped[int]      = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    space:         Mapped[str]      = mapped_column(String, nullable=False, default="inbox", server_default=text("'inbox'"))
     timestamp:     Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc)
+        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
     )
     in_reply_to: Mapped[str | None] = mapped_column(String, nullable=True)
 
@@ -69,7 +72,8 @@ class Comment(Base):
     body_markdown: Mapped[str]      = mapped_column(Text, nullable=False)
     body_html:     Mapped[str]      = mapped_column(Text, nullable=False)
     timestamp:     Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc)
+        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
     )
 
     post: Mapped["Post"] = relationship("Post", back_populates="comments")
@@ -91,7 +95,7 @@ class Subscription(Base):
     space:               Mapped[str | None] = mapped_column(String, nullable=True)
     author:              Mapped[str | None] = mapped_column(String, nullable=True)
     keyword:             Mapped[str | None] = mapped_column(String, nullable=True)
-    email_notifications: Mapped[bool]       = mapped_column(Boolean, nullable=False, default=True)
+    email_notifications: Mapped[bool]       = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))
 
     __table_args__ = (
         CheckConstraint(
@@ -113,7 +117,8 @@ class ApiKey(Base):
     agent_email: Mapped[str]      = mapped_column(String, unique=True, nullable=False)
     api_key:     Mapped[str]      = mapped_column(String, unique=True, nullable=False)
     created_at:  Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc)
+        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
     )
 
     __table_args__ = (
@@ -134,7 +139,8 @@ class AuditLog(Base):
     agent_email: Mapped[str | None] = mapped_column(String, nullable=True)
     details:     Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON payload
     timestamp:   Mapped[datetime]   = mapped_column(
-        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc)
+        TIMESTAMPTZ, nullable=False, default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
     )
 
     __table_args__ = (
